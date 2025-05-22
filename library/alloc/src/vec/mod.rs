@@ -532,7 +532,7 @@ impl<T> Vec<T> {
     /// #![feature(vec_into_raw_parts)]
     /// let v: Vec<i32> = vec![-1, 0, 1];
     ///
-    /// let (ptr, len, cap) = v.into_raw_parts();
+    /// let (ptr, len, cap) = Vec::into_raw_parts(v);
     ///
     /// let rebuilt = unsafe {
     ///     // We can now make changes to the components, such as
@@ -545,8 +545,8 @@ impl<T> Vec<T> {
     /// ```
     #[must_use = "losing the pointer will leak memory"]
     #[unstable(feature = "vec_into_raw_parts", reason = "new API", issue = "65816")]
-    pub fn into_raw_parts(self) -> (*mut T, usize, usize) {
-        let mut me = ManuallyDrop::new(self);
+    pub fn into_raw_parts(vec: Self) -> (*mut T, usize, usize) {
+        let mut me = ManuallyDrop::new(vec);
         (me.as_mut_ptr(), me.len(), me.capacity())
     }
 
@@ -573,7 +573,7 @@ impl<T> Vec<T> {
     ///
     /// let v: Vec<i32> = vec![-1, 0, 1];
     ///
-    /// let (ptr, len, cap) = v.into_parts();
+    /// let (ptr, len, cap) = Vec::into_parts(v);
     ///
     /// let rebuilt = unsafe {
     ///     // We can now make changes to the components, such as
@@ -587,8 +587,8 @@ impl<T> Vec<T> {
     #[must_use = "losing the pointer will leak memory"]
     #[unstable(feature = "box_vec_non_null", reason = "new API", issue = "130364")]
     // #[unstable(feature = "vec_into_raw_parts", reason = "new API", issue = "65816")]
-    pub fn into_parts(self) -> (NonNull<T>, usize, usize) {
-        let (ptr, len, capacity) = self.into_raw_parts();
+    pub fn into_parts(vec: Self) -> (NonNull<T>, usize, usize) {
+        let (ptr, len, capacity) = Self::into_raw_parts(vec);
         // SAFETY: A `Vec` always has a non-null pointer.
         (unsafe { NonNull::new_unchecked(ptr) }, len, capacity)
     }
@@ -1172,7 +1172,7 @@ impl<T, A: Allocator> Vec<T, A> {
     /// v.push(0);
     /// v.push(1);
     ///
-    /// let (ptr, len, cap, alloc) = v.into_raw_parts_with_alloc();
+    /// let (ptr, len, cap, alloc) = Vec::into_raw_parts_with_alloc(v);
     ///
     /// let rebuilt = unsafe {
     ///     // We can now make changes to the components, such as
@@ -1186,8 +1186,8 @@ impl<T, A: Allocator> Vec<T, A> {
     #[must_use = "losing the pointer will leak memory"]
     #[unstable(feature = "allocator_api", issue = "32838")]
     // #[unstable(feature = "vec_into_raw_parts", reason = "new API", issue = "65816")]
-    pub fn into_raw_parts_with_alloc(self) -> (*mut T, usize, usize, A) {
-        let mut me = ManuallyDrop::new(self);
+    pub fn into_raw_parts_with_alloc(vec: Self) -> (*mut T, usize, usize, A) {
+        let mut me = ManuallyDrop::new(vec);
         let len = me.len();
         let capacity = me.capacity();
         let ptr = me.as_mut_ptr();
@@ -1222,7 +1222,7 @@ impl<T, A: Allocator> Vec<T, A> {
     /// v.push(0);
     /// v.push(1);
     ///
-    /// let (ptr, len, cap, alloc) = v.into_parts_with_alloc();
+    /// let (ptr, len, cap, alloc) = Vec::into_parts_with_alloc(v);
     ///
     /// let rebuilt = unsafe {
     ///     // We can now make changes to the components, such as
@@ -1237,8 +1237,8 @@ impl<T, A: Allocator> Vec<T, A> {
     #[unstable(feature = "allocator_api", issue = "32838")]
     // #[unstable(feature = "box_vec_non_null", reason = "new API", issue = "130364")]
     // #[unstable(feature = "vec_into_raw_parts", reason = "new API", issue = "65816")]
-    pub fn into_parts_with_alloc(self) -> (NonNull<T>, usize, usize, A) {
-        let (ptr, len, capacity, alloc) = self.into_raw_parts_with_alloc();
+    pub fn into_parts_with_alloc(vec: Self) -> (NonNull<T>, usize, usize, A) {
+        let (ptr, len, capacity, alloc) = Vec::into_raw_parts_with_alloc(vec);
         // SAFETY: A `Vec` always has a non-null pointer.
         (unsafe { NonNull::new_unchecked(ptr) }, len, capacity, alloc)
     }
@@ -3132,7 +3132,7 @@ impl<T, A: Allocator, const N: usize> Vec<[T; N], A> {
     /// ```
     #[stable(feature = "slice_flatten", since = "1.80.0")]
     pub fn into_flattened(self) -> Vec<T, A> {
-        let (ptr, len, cap, alloc) = self.into_raw_parts_with_alloc();
+        let (ptr, len, cap, alloc) = Vec::into_raw_parts_with_alloc(self);
         let (new_len, new_cap) = if T::IS_ZST {
             (len.checked_mul(N).expect("vec len overflow"), usize::MAX)
         } else {
