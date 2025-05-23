@@ -1592,12 +1592,8 @@ pub const fn forget<T: ?Sized>(_: T);
 /// // this has all the same caveats. Besides the information provided above, also consult the
 /// // [`from_raw_parts`] documentation.
 /// let v_from_raw = unsafe {
-// FIXME Update this when vec_into_raw_parts is stabilized
-///     // Ensure the original vector is not dropped.
-///     let mut v_clone = std::mem::ManuallyDrop::new(v_clone);
-///     Vec::from_raw_parts(v_clone.as_mut_ptr() as *mut Option<&i32>,
-///                         v_clone.len(),
-///                         v_clone.capacity())
+///     let (ptr, len, capacity) = Vec::into_raw_parts(v_clone);
+///     Vec::from_raw_parts(ptr as *mut Option<&i32>, len, capacity)
 /// };
 /// ```
 ///

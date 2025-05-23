@@ -529,7 +529,6 @@ impl<T> Vec<T> {
     /// # Examples
     ///
     /// ```
-    /// #![feature(vec_into_raw_parts)]
     /// let v: Vec<i32> = vec![-1, 0, 1];
     ///
     /// let (ptr, len, cap) = Vec::into_raw_parts(v);
@@ -544,7 +543,7 @@ impl<T> Vec<T> {
     /// assert_eq!(rebuilt, [4294967295, 0, 1]);
     /// ```
     #[must_use = "losing the pointer will leak memory"]
-    #[unstable(feature = "vec_into_raw_parts", reason = "new API", issue = "65816")]
+    #[stable(feature = "vec_into_raw_parts", since = "CURRENT_RUSTC_VERSION")]
     pub fn into_raw_parts(vec: Self) -> (*mut T, usize, usize) {
         let mut me = ManuallyDrop::new(vec);
         (me.as_mut_ptr(), me.len(), me.capacity())
@@ -569,7 +568,7 @@ impl<T> Vec<T> {
     /// # Examples
     ///
     /// ```
-    /// #![feature(vec_into_raw_parts, box_vec_non_null)]
+    /// #![feature(box_vec_non_null)]
     ///
     /// let v: Vec<i32> = vec![-1, 0, 1];
     ///
@@ -586,7 +585,6 @@ impl<T> Vec<T> {
     /// ```
     #[must_use = "losing the pointer will leak memory"]
     #[unstable(feature = "box_vec_non_null", reason = "new API", issue = "130364")]
-    // #[unstable(feature = "vec_into_raw_parts", reason = "new API", issue = "65816")]
     pub fn into_parts(vec: Self) -> (NonNull<T>, usize, usize) {
         let (ptr, len, capacity) = Self::into_raw_parts(vec);
         // SAFETY: A `Vec` always has a non-null pointer.
@@ -645,19 +643,9 @@ impl<T> Vec<T> {
     ///
     /// ```
     /// use std::ptr;
-    /// use std::mem;
     ///
     /// let v = vec![1, 2, 3];
-    ///
-    // FIXME Update this when vec_into_raw_parts is stabilized
-    /// // Prevent running `v`'s destructor so we are in complete control
-    /// // of the allocation.
-    /// let mut v = mem::ManuallyDrop::new(v);
-    ///
-    /// // Pull out the various important pieces of information about `v`
-    /// let p = v.as_mut_ptr();
-    /// let len = v.len();
-    /// let cap = v.capacity();
+    /// let (p, len, cap) = Vec::into_raw_parts(v);
     ///
     /// unsafe {
     ///     // Overwrite memory with 4, 5, 6
@@ -754,25 +742,13 @@ impl<T> Vec<T> {
     /// ```
     /// #![feature(box_vec_non_null)]
     ///
-    /// use std::ptr::NonNull;
-    /// use std::mem;
-    ///
     /// let v = vec![1, 2, 3];
-    ///
-    // FIXME Update this when vec_into_raw_parts is stabilized
-    /// // Prevent running `v`'s destructor so we are in complete control
-    /// // of the allocation.
-    /// let mut v = mem::ManuallyDrop::new(v);
-    ///
-    /// // Pull out the various important pieces of information about `v`
-    /// let p = unsafe { NonNull::new_unchecked(v.as_mut_ptr()) };
-    /// let len = v.len();
-    /// let cap = v.capacity();
+    /// let (p, len, cap) = Vec::into_parts(v);
     ///
     /// unsafe {
     ///     // Overwrite memory with 4, 5, 6
     ///     for i in 0..len {
-    ///         p.add(i).write(4 + i);
+    ///         p.as_ptr().add(i).write(4 + i);
     ///     }
     ///
     ///     // Put everything back together into a Vec
@@ -968,23 +944,13 @@ impl<T, A: Allocator> Vec<T, A> {
     /// use std::alloc::System;
     ///
     /// use std::ptr;
-    /// use std::mem;
     ///
     /// let mut v = Vec::with_capacity_in(3, System);
     /// v.push(1);
     /// v.push(2);
     /// v.push(3);
     ///
-    // FIXME Update this when vec_into_raw_parts is stabilized
-    /// // Prevent running `v`'s destructor so we are in complete control
-    /// // of the allocation.
-    /// let mut v = mem::ManuallyDrop::new(v);
-    ///
-    /// // Pull out the various important pieces of information about `v`
-    /// let p = v.as_mut_ptr();
-    /// let len = v.len();
-    /// let cap = v.capacity();
-    /// let alloc = v.allocator();
+    /// let (p, len, cap, alloc) = Vec::into_raw_parts_with_alloc(v);
     ///
     /// unsafe {
     ///     // Overwrite memory with 4, 5, 6
@@ -1083,29 +1049,17 @@ impl<T, A: Allocator> Vec<T, A> {
     ///
     /// use std::alloc::System;
     ///
-    /// use std::ptr::NonNull;
-    /// use std::mem;
-    ///
     /// let mut v = Vec::with_capacity_in(3, System);
     /// v.push(1);
     /// v.push(2);
     /// v.push(3);
-    ///
-    // FIXME Update this when vec_into_raw_parts is stabilized
-    /// // Prevent running `v`'s destructor so we are in complete control
-    /// // of the allocation.
-    /// let mut v = mem::ManuallyDrop::new(v);
-    ///
-    /// // Pull out the various important pieces of information about `v`
-    /// let p = unsafe { NonNull::new_unchecked(v.as_mut_ptr()) };
-    /// let len = v.len();
-    /// let cap = v.capacity();
-    /// let alloc = v.allocator();
+    //
+    /// let (p, len, cap, alloc) = Vec::into_parts_with_alloc(v);
     ///
     /// unsafe {
     ///     // Overwrite memory with 4, 5, 6
     ///     for i in 0..len {
-    ///         p.add(i).write(4 + i);
+    ///         p.as_ptr().add(i).write(4 + i);
     ///     }
     ///
     ///     // Put everything back together into a Vec
@@ -1163,7 +1117,7 @@ impl<T, A: Allocator> Vec<T, A> {
     /// # Examples
     ///
     /// ```
-    /// #![feature(allocator_api, vec_into_raw_parts)]
+    /// #![feature(allocator_api)]
     ///
     /// use std::alloc::System;
     ///
@@ -1185,7 +1139,6 @@ impl<T, A: Allocator> Vec<T, A> {
     /// ```
     #[must_use = "losing the pointer will leak memory"]
     #[unstable(feature = "allocator_api", issue = "32838")]
-    // #[unstable(feature = "vec_into_raw_parts", reason = "new API", issue = "65816")]
     pub fn into_raw_parts_with_alloc(vec: Self) -> (*mut T, usize, usize, A) {
         let mut me = ManuallyDrop::new(vec);
         let len = me.len();
@@ -1213,7 +1166,7 @@ impl<T, A: Allocator> Vec<T, A> {
     /// # Examples
     ///
     /// ```
-    /// #![feature(allocator_api, vec_into_raw_parts, box_vec_non_null)]
+    /// #![feature(allocator_api, box_vec_non_null)]
     ///
     /// use std::alloc::System;
     ///
@@ -1236,7 +1189,6 @@ impl<T, A: Allocator> Vec<T, A> {
     #[must_use = "losing the pointer will leak memory"]
     #[unstable(feature = "allocator_api", issue = "32838")]
     // #[unstable(feature = "box_vec_non_null", reason = "new API", issue = "130364")]
-    // #[unstable(feature = "vec_into_raw_parts", reason = "new API", issue = "65816")]
     pub fn into_parts_with_alloc(vec: Self) -> (NonNull<T>, usize, usize, A) {
         let (ptr, len, capacity, alloc) = Vec::into_raw_parts_with_alloc(vec);
         // SAFETY: A `Vec` always has a non-null pointer.
